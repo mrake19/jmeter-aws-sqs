@@ -1,26 +1,21 @@
 package com.coolcodr.jmeter.aws.sqs;
 
-import java.io.Serializable;
-import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
-import org.apache.jmeter.config.Arguments;
-import org.apache.jmeter.samplers.SampleResult;
-import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
-import com.amazonaws.services.sqs.model.DeleteMessageRequest;
-import com.amazonaws.services.sqs.model.DeleteQueueRequest;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageResult;
-import com.amazonaws.auth.BasicAWSCredentials;
+import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
+import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
+import org.apache.jmeter.samplers.SampleResult;
+
+import java.io.Serializable;
 
 public class SqsSampler extends AbstractJavaSamplerClient implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -31,6 +26,7 @@ public class SqsSampler extends AbstractJavaSamplerClient implements Serializabl
         Arguments defaultParameters = new Arguments();
         defaultParameters.addArgument("ACCESS_KEY", "");
         defaultParameters.addArgument("SECRET_KEY", "");
+        defaultParameters.addArgument("SESSION_KEY", "");
         defaultParameters.addArgument("REGION", "");
         defaultParameters.addArgument("QUEUE_NAME", "");
         defaultParameters.addArgument("MSG", "");
@@ -42,6 +38,7 @@ public class SqsSampler extends AbstractJavaSamplerClient implements Serializabl
         // pull parameters
         String accessKey = context.getParameter( "ACCESS_KEY" );
         String secretKey = context.getParameter( "SECRET_KEY" );
+        String sessionKey = context.getParameter( "SESSION_KEY" );
         String region = context.getParameter( "REGION" );
         String queueName = context.getParameter( "QUEUE_NAME" );
         String msg = context.getParameter( "MSG" );
@@ -50,7 +47,10 @@ public class SqsSampler extends AbstractJavaSamplerClient implements Serializabl
         result.sampleStart(); // start stopwatch
 
         try {
-            AWSCredentials credentials = new BasicAWSCredentials( accessKey, secretKey);
+            AWSCredentials credentials = (sessionKey != null && !"".equals(sessionKey.trim()))
+                ? new BasicSessionCredentials(accessKey, secretKey, sessionKey)
+                : new BasicAWSCredentials( accessKey, secretKey);
+
             AmazonSQS sqs = new AmazonSQSClient(credentials);
             // Region awsRegion = Region.getRegion(Regions.valueOf("AP_SOUTHEAST_1"));
             // Region awsRegion = Region.getRegion(Regions.AP_SOUTHEAST_1);
