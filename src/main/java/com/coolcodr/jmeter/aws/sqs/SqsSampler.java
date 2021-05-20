@@ -14,8 +14,11 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
+import org.apache.jmeter.threads.JMeterContextService;
+import org.apache.jmeter.threads.JMeterVariables;
 
 import java.io.Serializable;
+import java.util.Map;
 
 public class SqsSampler extends AbstractJavaSamplerClient implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -43,6 +46,8 @@ public class SqsSampler extends AbstractJavaSamplerClient implements Serializabl
         String queueName = context.getParameter( "QUEUE_NAME" );
         String msg = context.getParameter( "MSG" );
 
+        msg = replaceVars(msg);
+
         SampleResult result = new SampleResult();
         result.sampleStart(); // start stopwatch
 
@@ -64,7 +69,7 @@ public class SqsSampler extends AbstractJavaSamplerClient implements Serializabl
 
             result.sampleEnd(); // stop stopwatch
             result.setSuccessful( true );
-            result.setResponseMessage( "Successfully performed action" );
+            result.setResponseMessage( "Successfully performed action" + msg);
             result.setResponseCodeOK(); // 200 code
         } catch (Exception e) {
             result.sampleEnd(); // stop stopwatch
@@ -79,5 +84,15 @@ public class SqsSampler extends AbstractJavaSamplerClient implements Serializabl
             result.setResponseCode( "500" );
         }
         return result;
+    }
+
+    private String replaceVars(String msg) {
+        JMeterVariables variables = JMeterContextService.getContext().getVariables();
+
+        for(Map.Entry<String, Object> entry : variables.entrySet()) {
+            String searchVar = String.format("${%s}", entry.getKey());
+            msg = msg.replace(searchVar, entry.getValue()+"");
+        }
+        return msg;
     }
 }
